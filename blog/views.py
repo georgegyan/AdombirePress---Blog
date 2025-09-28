@@ -1,3 +1,4 @@
+from django.db.models import Q  # Add this import
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -7,8 +8,7 @@ from .serializers import (
     CategorySerializer, PostListSerializer, PostDetailSerializer,
     PostCreateUpdateSerializer, CommentSerializer, LikeSerializer
 )
-from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
-from blog import models
+from .permissions import IsAdminOrReadOnly
 
 class CategoryListCreateView(generics.ListCreateAPIView):
     """
@@ -21,7 +21,57 @@ class CategoryListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         # Annotate with post count for each category
         return Category.objects.annotate(
-            post_count=Count('posts', filter=models.Q(posts__status='published'))
+            post_count=Count('posts', filter=Q(posts__status='published'))  # Fixed: use Q instead of models.Q
+        )
+
+class PostListView(generics.ListAPIView):
+    """
+    View to list all published posts
+    """
+    serializer_class = PostListSerializer
+    
+    def get_queryset(self):
+        queryset = Post.objects.filter(status='published').select_related('author', 'category')
+        
+        # Filter by category if provided
+        category_slug = self.request.query_params.get('category', None)
+        if category_slug:
+            queryset = queryset.filter(category__slug=category_slug)
+        
+        # Search functionality
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) | 
+                Q(content__icontains=search) |
+                Q(excerpt__icontains=search)
+            )
+        
+        return queryset
+    
+from django.db.models import Q, Count  # Fixed import
+from rest_framework import generics, permissions, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from .models import Category, Post, Comment, Like
+from .serializers import (
+    CategorySerializer, PostListSerializer, PostDetailSerializer,
+    PostCreateUpdateSerializer, CommentSerializer, LikeSerializer
+)
+from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+
+class CategoryListCreateView(generics.ListCreateAPIView):
+    """
+    View to list all categories or create a new category
+    """
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
+    
+    def get_queryset(self):
+        # Annotate with post count for each category
+        return Category.objects.annotate(
+            post_count=Count('posts', filter=Q(posts__status='published'))
         )
 
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -51,9 +101,9 @@ class PostListView(generics.ListAPIView):
         search = self.request.query_params.get('search', None)
         if search:
             queryset = queryset.filter(
-                models.Q(title__icontains=search) | 
-                models.Q(content__icontains=search) |
-                models.Q(excerpt__icontains=search)
+                Q(title__icontains=search) | 
+                Q(content__icontains=search) |
+                Q(excerpt__icontains=search)
             )
         
         return queryset
@@ -89,7 +139,7 @@ class PostUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'GET':
             return PostDetailSerializer
         return PostCreateUpdateSerializer
-    
+
 class CommentListCreateView(generics.ListCreateAPIView):
     """
     View to list comments for a post or create a new comment
@@ -116,6 +166,7 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAuthorOrReadOnly]
+
 class LikeCreateView(generics.CreateAPIView):
     """
     View to like/unlike a post
@@ -167,3 +218,4 @@ def post_likes_count(request, post_slug):
         return Response(data)
     except Post.DoesNotExist:
         return Response({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
+    
