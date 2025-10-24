@@ -1,19 +1,17 @@
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
-from django.db.models import Q  # Add this import
+from django.db.models import Q, Count
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from django.db.models import Count
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
 from .models import Category, Post, Comment, Like
 from .serializers import (
     CategorySerializer, PostListSerializer, PostDetailSerializer,
     PostCreateUpdateSerializer, CommentSerializer, LikeSerializer
 )
-from .permissions import IsAdminOrReadOnly
-from django.contrib.auth import login
-from django.shortcuts import redirect
+from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 
 class CategoryListCreateView(generics.ListCreateAPIView):
     """
@@ -53,18 +51,6 @@ class PostListView(generics.ListAPIView):
             )
         
         return queryset
-    
-from django.db.models import Q, Count  # Fixed import
-from rest_framework import generics, permissions, status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from .models import Category, Post, Comment, Like
-from .serializers import (
-    CategorySerializer, PostListSerializer, PostDetailSerializer,
-    PostCreateUpdateSerializer, CommentSerializer, LikeSerializer
-)
-from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
-
 class CategoryListCreateView(generics.ListCreateAPIView):
     """
     View to list all categories or create a new category
