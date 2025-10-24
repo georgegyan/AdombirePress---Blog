@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ post.title }} - Adombire Press{% endblock %}
+
+{% block content %}
+<article>
+    <div class="mb-4">
+        <span class="badge category-badge">{{ post.category.name }}</span>
+        <h1 class="display-5">{{ post.title }}</h1>
+        <p class="text-muted">
+            By {{ post.author.username }} • {{ post.created_at|date:"F d, Y" }}
+        </p>
+        
+        {% if post.featured_image %}
+        <img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="img-fluid rounded mb-4">
+        {% endif %}
+    </div>
+
+    <div class="post-content">
+        {{ post.content|linebreaks }}
+    </div>
+
+    <div class="mt-5">
+        <h4>Comments ({{ comments.count }})</h4>
+        {% for comment in comments %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6 class="card-title">{{ comment.author.username }}</h6>
+                <p class="card-text">{{ comment.content }}</p>
+                <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No comments yet. Be the first to comment!</p>
+        {% endfor %}
+    </div>
+</article>
+{% endblock %}

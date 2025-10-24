@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Adombire Press{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section rounded p-5 mb-5 text-center">
+    <h1 class="display-4 fw-bold text-dark">Welcome to Adombire Press</h1>
+    <p class="lead">Your trusted source for technology, lifestyle, and news</p>
+    <a href="{% url 'post_list' %}" class="btn btn-success btn-lg mt-3">Explore Posts</a>
+</section>
+
+<!-- Featured Posts -->
+<section class="mb-5">
+    <h2 class="mb-4">Featured Posts</h2>
+    <div class="row">
+        {% for post in featured_posts %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card post-card h-100">
+                {% if post.featured_image %}
+                <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <span class="text-muted">📝 No Image</span>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <span class="badge category-badge mb-2">{{ post.category.name }}</span>
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <p class="card-text">{{ post.excerpt|default:post.content|truncatewords:20 }}</p>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        By {{ post.author.username }} • {{ post.created_at|date:"M d, Y" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Recent Posts -->
+<section class="mb-5">
+    <h2 class="mb-4">Recent Posts</h2>
+    <div class="row">
+        {% for post in recent_posts %}
+        <div class="col-md-6 mb-4">
+            <div class="card post-card h-100">
+                <div class="card-body">
+                    <span class="badge category-badge mb-2">{{ post.category.name }}</span>
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <p class="card-text">{{ post.excerpt|default:post.content|truncatewords:30 }}</p>
+                    <a href="{% url 'post_detail' post.slug %}" class="btn btn-outline-success">Read More</a>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        By {{ post.author.username }} • {{ post.created_at|date:"M d, Y" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

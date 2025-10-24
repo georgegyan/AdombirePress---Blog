@@ -1,3 +1,6 @@
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Q  # Add this import
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
@@ -9,6 +12,8 @@ from .serializers import (
     PostCreateUpdateSerializer, CommentSerializer, LikeSerializer
 )
 from .permissions import IsAdminOrReadOnly
+from django.contrib.auth import login
+from django.shortcuts import redirect
 
 class CategoryListCreateView(generics.ListCreateAPIView):
     """
@@ -219,3 +224,49 @@ def post_likes_count(request, post_slug):
     except Post.DoesNotExist:
         return Response({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
     
+# Template-based views
+def home(request):
+    featured_posts = Post.objects.filter(status='published')[:3]
+    recent_posts = Post.objects.filter(status='published').order_by('-created_at')[:6]
+    
+    context = {
+        'featured_posts': featured_posts,
+        'recent_posts': recent_posts,
+    }
+    return render(request, 'home.html', context)
+
+def post_list(request):
+    posts = Post.objects.filter(status='published').order_by('-created_at')
+    return render(request, 'blog/post_list.html', {'posts': posts})
+
+def post_detail(request, slug):
+    post = get_object_or_404(Post, slug=slug, status='published')
+    comments = post.comments.filter(is_approved=True)
+    return render(request, 'blog/post_detail.html', {
+        'post': post,
+        'comments': comments
+    })
+
+def category_list(request):
+    categories = Category.objects.all()
+    return render(request, 'blog/category_list.html', {'categories': categories})
+
+def category_posts(request, slug):
+    category = get_object_or_404(Category, slug=slug)
+    posts = Post.objects.filter(category=category, status='published')
+    return render(request, 'blog/category_posts.html', {
+        'category': category,
+        'posts': posts
+    })
+
+# Authentication views
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('home')
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/register.html', {'form': form})
